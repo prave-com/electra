@@ -15,15 +15,27 @@ model User {
   image         String?
   password      String?
   role          Role
-  accounts      Account[]
-  sessions      Session[]
+  isVerified    Boolean   @default(false)
+
+  nik         String?   @db.VarChar(16)
+  phoneNumber String?   @db.VarChar(32)
+  birthPlace  String?   @db.VarChar(255)
+  birthDate   DateTime?
+  alamat      String?   @db.VarChar(255)
+  fotoKtp     String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  pemilihanTpss PemilihanTps[]
 }
 
 model Account {
-  userId            String
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   type              String
   provider          String
   providerAccountId String
@@ -37,8 +49,6 @@ model Account {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
 }
@@ -66,4 +76,218 @@ enum Role {
   VERIFIER
   EVENTMANAGER
   OPERATOR
+}
+
+model Provinsi {
+  id   String @id @default(cuid())
+  kode String @unique @db.VarChar(2)
+  nama String @db.VarChar(255)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  kabupatens Kabupaten[]
+  pemilihans Pemilihan[]
+}
+
+model Kabupaten {
+  id   String @id @default(cuid())
+  kode String @db.VarChar(2)
+  nama String @db.VarChar(255)
+
+  provinsiId String
+  provinsi   Provinsi @relation(fields: [provinsiId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  kecamatans Kecamatan[]
+  pemilihans Pemilihan[]
+
+  @@unique([kode, provinsiId])
+}
+
+model Kecamatan {
+  id   String @id @default(cuid())
+  kode String @db.VarChar(2)
+  nama String @db.VarChar(255)
+
+  kabupatenId String
+  kabupaten   Kabupaten @relation(fields: [kabupatenId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  kelurahans Kelurahan[]
+
+  @@unique([kode, kabupatenId])
+}
+
+model Kelurahan {
+  id   String @id @default(cuid())
+  kode String @db.VarChar(4)
+  nama String @db.VarChar(255)
+
+  kecamatanId String
+  kecamatan   Kecamatan @relation(fields: [kecamatanId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tpss Tps[]
+
+  @@unique([kode, kecamatanId])
+}
+
+enum JenisPemilihan {
+  GUBERNUR
+  BUPATI_WALIKOTA
+}
+
+model Pemilihan {
+  id      String         @id @default(cuid())
+  nama    String         @db.VarChar(255)
+  jenis   JenisPemilihan
+  tanggal DateTime       @db.Date
+
+  provinsiId  String
+  provinsi    Provinsi  @relation(fields: [provinsiId], references: [id])
+  kabupatenId String
+  kabupaten   Kabupaten @relation(fields: [kabupatenId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  kandidats     Kandidat[]
+  pemilihanTpss PemilihanTps[]
+}
+
+model Tps {
+  id        String @id @default(cuid())
+  nomor     Int    @db.SmallInt
+  alamat    String @db.VarChar(255)
+  latitude  Float
+  longitude Float
+
+  kelurahanId String
+  kelurahan   Kelurahan @relation(fields: [kelurahanId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  pemilihanTpss PemilihanTps[]
+}
+
+model PemilihanTps {
+  id            String  @id @default(cuid())
+  jumlahPemilih Int
+  suaraSah      Int
+  suaraTidakSah Int
+  suaraTotal    Int
+  fotoFormC1    String?
+
+  pemilihanId String
+  pemilihan   Pemilihan @relation(fields: [pemilihanId], references: [id])
+  tpsId       String
+  tps         Tps       @relation(fields: [tpsId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  laporans Laporan[]
+  suaras   Suara[]
+}
+
+model Kandidat {
+  id           String  @id @default(cuid())
+  namaKetua    String  @db.VarChar(255)
+  namaWakil    String  @db.VarChar(255)
+  nikKetua     String? @db.VarChar(16)
+  nikWakil     String? @db.VarChar(16)
+  nomorUrut    Int     @db.SmallInt
+  fotoPasangan String?
+  visiMisi     String?
+
+  pemilihanId String
+  pemilihan   Pemilihan @relation(fields: [pemilihanId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  suaras Suara[]
+
+  @@unique([nikKetua, pemilihanId])
+  @@unique([nikWakil, pemilihanId])
+  @@unique([nomorUrut, pemilihanId])
+}
+
+model Partai {
+  id   String  @id @default(cuid())
+  nama String  @db.VarChar(255)
+  foto String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model KandidatPartai {
+  id         String @id @default(cuid())
+  kandidatId String
+  partaiId   String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum JenisLaporan {
+  PELANGGARAN_ADMINISTRASI
+  PELANGGARAN_TINDAK_PIDANA_PEMILU
+  PELANGGARAN_KODE_ETIK_PEMILU
+}
+
+model Laporan {
+  id        String       @id @default(cuid())
+  jenis     JenisLaporan
+  deskripsi String
+  balasan   String?
+
+  pemilihanTpsId String
+  pemilihanTps   PemilihanTps @relation(fields: [pemilihanTpsId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Suara {
+  id            String  @id @default(cuid())
+  jumlah        Int
+  terverifikasi Boolean @default(false)
+
+  pemilihanTpsId String
+  pemilihanTps   PemilihanTps @relation(fields: [pemilihanTpsId], references: [id])
+  kandidatId     String
+  kandidat       Kandidat     @relation(fields: [kandidatId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum LogLevel {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  CRITICAL
+}
+
+model Log {
+  id      String   @id @default(cuid())
+  level   LogLevel
+  message String
+  context Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
