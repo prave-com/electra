@@ -14,7 +14,7 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          Role
+  role          Role      @default(GUEST)
   isVerified    Boolean   @default(false)
 
   nik         String?   @db.VarChar(16)
@@ -76,6 +76,7 @@ enum Role {
   VERIFIER
   EVENTMANAGER
   OPERATOR
+  GUEST
 }
 
 model Provinsi {
