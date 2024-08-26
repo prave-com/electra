@@ -6,7 +6,7 @@ import * as React from 'react'
 
 export default function RootLayout(props: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="id">
       <body>
         <AppRouterCacheProvider>
           <ThemeProvider theme={theme}>
