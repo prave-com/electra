@@ -93,7 +93,7 @@ model Provinsi {
 
 model Kabupaten {
   id   String @id @default(cuid())
-  kode String @db.VarChar(2)
+  kode String @db.VarChar(5)
   nama String @db.VarChar(255)
 
   provinsiId String
@@ -110,7 +110,7 @@ model Kabupaten {
 
 model Kecamatan {
   id   String @id @default(cuid())
-  kode String @db.VarChar(2)
+  kode String @db.VarChar(8)
   nama String @db.VarChar(255)
 
   kabupatenId String
@@ -126,7 +126,7 @@ model Kecamatan {
 
 model Kelurahan {
   id   String @id @default(cuid())
-  kode String @db.VarChar(4)
+  kode String @db.VarChar(13)
   nama String @db.VarChar(255)
 
   kecamatanId String

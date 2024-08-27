@@ -2,7 +2,9 @@
   "name": "electra",
   "version": "0.1.0",
   "private": true,
-  "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
+  "prisma": {
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

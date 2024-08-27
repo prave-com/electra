@@ -1,7 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { parse } from 'csv-parse'
 import fs from 'fs'
-import path from 'path'
 
 const prisma = new PrismaClient()
 
@@ -10,100 +8,89 @@ async function main() {
   // https://peraturan.bpk.go.id/Details/196233/permendagri-no-58-tahun-2021
   // https://peraturan.bpk.go.id/Details/137530/permendagri-no-72-tahun-2019
 
-  const csvFilePath = path.join(__dirname, 'seed.csv')
+  const data = JSON.parse(fs.readFileSync('prisma/data.json', 'utf-8'))
 
-  const records: Array<{ kode: string; nama: string }> = []
+  for (const provinsiKey in data['INDONESIA']['Provinces']) {
+    const provinsi = data['INDONESIA']['Provinces'][provinsiKey]
 
-  fs.createReadStream(csvFilePath)
-    .pipe(parse({ delimiter: ',', columns: true, skip_empty_lines: true }))
-    .on('data', (row) => {
-      records.push(row)
+    // Upsert Provinsi
+    const createdProvinsi = await prisma.provinsi.upsert({
+      where: { kode: provinsi['Code'] },
+      update: {},
+      create: {
+        kode: provinsi['Code'],
+        nama: provinsi['Name'],
+      },
     })
-    .on('end', async () => {
-      console.log('CSV file successfully processed')
 
-      for (const record of records) {
-        const [provinsiKode, kabupatenKode, kecamatanKode, kelurahanKode] =
-          record.kode.split('.')
+    for (const kabupatenKey in provinsi['Cities']) {
+      const kabupaten = provinsi['Cities'][kabupatenKey]
 
-        if (kelurahanKode) {
-          // Insert or Update Kelurahan
+      // Upsert Kabupaten
+      const createdKabupaten = await prisma.kabupaten.upsert({
+        where: {
+          kode_provinsiId: {
+            kode: kabupaten['Code'],
+            provinsiId: createdProvinsi.id,
+          },
+        },
+        update: {},
+        create: {
+          kode: kabupaten['Code'],
+          nama: kabupaten['Name'],
+          provinsiId: createdProvinsi.id,
+        },
+      })
+
+      for (const kecamatanKey in kabupaten['Districts']) {
+        const kecamatan = kabupaten['Districts'][kecamatanKey]
+
+        // Upsert Kecamatan
+        const createdKecamatan = await prisma.kecamatan.upsert({
+          where: {
+            kode_kabupatenId: {
+              kode: kecamatan['Code'],
+              kabupatenId: createdKabupaten.id,
+            },
+          },
+          update: {},
+          create: {
+            kode: kecamatan['Code'],
+            nama: kecamatan['Name'],
+            kabupatenId: createdKabupaten.id,
+          },
+        })
+
+        for (const kelurahanKey in kecamatan['Neighborhoods']) {
+          const kelurahan = kecamatan['Neighborhoods'][kelurahanKey]
+
+          // Upsert Kelurahan
           await prisma.kelurahan.upsert({
-            where: { kode: kelurahanKode },
-            update: {
-              nama: record.nama,
-              kecamatan: {
-                connect: { kode: kecamatanKode },
+            where: {
+              kode_kecamatanId: {
+                kode: kelurahan['Code'],
+                kecamatanId: createdKecamatan.id,
               },
             },
+            update: {},
             create: {
-              kode: kelurahanKode,
-              nama: record.nama,
-              kecamatan: {
-                connect: { kode: kecamatanKode },
-              },
-            },
-          })
-        } else if (kecamatanKode) {
-          // Insert or Update Kecamatan
-          await prisma.kecamatan.upsert({
-            where: { kode: kecamatanKode },
-            update: {
-              nama: record.nama,
-              kabupaten: {
-                connect: { kode: kabupatenKode },
-              },
-            },
-            create: {
-              kode: kecamatanKode,
-              nama: record.nama,
-              kabupaten: {
-                connect: { kode: kabupatenKode },
-              },
-            },
-          })
-        } else if (kabupatenKode) {
-          // Insert or Update Kabupaten
-          await prisma.kabupaten.upsert({
-            where: { kode: kabupatenKode },
-            update: {
-              nama: record.nama,
-              provinsi: {
-                connect: { kode: provinsiKode },
-              },
-            },
-            create: {
-              kode: kabupatenKode,
-              nama: record.nama,
-              provinsi: {
-                connect: { kode: provinsiKode },
-              },
-            },
-          })
-        } else if (provinsiKode) {
-          // Insert or Update Provinsi
-          await prisma.provinsi.upsert({
-            where: { kode: provinsiKode },
-            update: {
-              nama: record.nama,
-            },
-            create: {
-              kode: provinsiKode,
-              nama: record.nama,
+              kode: kelurahan['Code'],
+              nama: kelurahan['Name'],
+              kecamatanId: createdKecamatan.id,
             },
           })
         }
       }
-
-      console.log('Data successfully seeded')
-      await prisma.$disconnect()
-    })
-    .on('error', (error) => {
-      console.error('Error reading the CSV file', error)
-    })
+    }
+  }
 }
 
-main().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+main()
+  .then(async () => {
+    await prisma.$disconnect()
+  })
+  .catch(async (e) => {
+    console.error(e)
+    await prisma.$disconnect()
+    process.exit(1)
+  })
