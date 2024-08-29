@@ -47,15 +47,11 @@ export default auth((req) => {
 
   if (isLoggedIn) {
     if (isAdministratorRoute && !isAdministrator) {
-      return Response.redirect(
-        new URL('/signin?message=Not Authorized', nextUrl),
-      )
+      return Response.redirect(new URL('/signin', nextUrl))
     }
 
     if (isOperatorRoute && !isOperator) {
-      return Response.redirect(
-        new URL(`/signin?message=Not Authorized`, nextUrl),
-      )
+      return Response.redirect(new URL(`/signin`, nextUrl))
     }
 
     return
