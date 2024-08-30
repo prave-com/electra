@@ -9,7 +9,7 @@ import * as z from 'zod'
 export default async function login(
   values: z.infer<typeof LoginSchema>,
   callbackUrl?: string | null,
-): Promise<{ error?: string }> {
+) {
   const validatedFields = LoginSchema.safeParse(values)
 
   if (!validatedFields.success) {
@@ -30,7 +30,7 @@ export default async function login(
       password,
       redirectTo: callbackUrl || undefined,
     })
-    return {}
+    return
   } catch (error) {
     if (error instanceof AuthError) {
       switch (error.type) {
