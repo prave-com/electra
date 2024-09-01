@@ -10,72 +10,78 @@ async function main() {
 
   const data = JSON.parse(fs.readFileSync('prisma/data.json', 'utf-8'))
 
-  for (const provinsiKey in data['INDONESIA']['Provinces']) {
-    const provinsi = data['INDONESIA']['Provinces'][provinsiKey]
+  for (const provinsiCode in data['62']['provinces']) {
+    const provinsi = data['62']['provinces'][provinsiCode]
 
     // Upsert Provinsi
     const createdProvinsi = await prisma.provinsi.upsert({
-      where: { kode: provinsi['Code'] },
-      update: {},
+      where: { kode: provinsiCode },
+      update: {
+        nama: provinsi.name,
+      },
       create: {
-        kode: provinsi['Code'],
-        nama: provinsi['Name'],
+        kode: provinsiCode,
+        nama: provinsi.name,
       },
     })
 
-    for (const kabupatenKey in provinsi['Cities']) {
-      const kabupaten = provinsi['Cities'][kabupatenKey]
+    for (const kabupatenCode in provinsi['cities']) {
+      const kabupaten = provinsi['cities'][kabupatenCode]
 
       // Upsert Kabupaten
       const createdKabupaten = await prisma.kabupaten.upsert({
         where: {
           kode_provinsiId: {
-            kode: kabupaten['Code'],
+            kode: kabupatenCode,
             provinsiId: createdProvinsi.id,
           },
         },
-        update: {},
+        update: {
+          nama: kabupaten.name,
+        },
         create: {
-          kode: kabupaten['Code'],
-          nama: kabupaten['Name'],
+          kode: kabupatenCode,
+          nama: kabupaten.name,
           provinsiId: createdProvinsi.id,
         },
       })
 
-      for (const kecamatanKey in kabupaten['Districts']) {
-        const kecamatan = kabupaten['Districts'][kecamatanKey]
+      for (const kecamatanCode in kabupaten['districts']) {
+        const kecamatan = kabupaten['districts'][kecamatanCode]
 
         // Upsert Kecamatan
         const createdKecamatan = await prisma.kecamatan.upsert({
           where: {
             kode_kabupatenId: {
-              kode: kecamatan['Code'],
+              kode: kecamatanCode,
               kabupatenId: createdKabupaten.id,
             },
           },
-          update: {},
+          update: {
+            nama: kecamatan.name,
+          },
           create: {
-            kode: kecamatan['Code'],
-            nama: kecamatan['Name'],
+            kode: kecamatanCode,
+            nama: kecamatan.name,
             kabupatenId: createdKabupaten.id,
           },
         })
 
-        for (const kelurahanKey in kecamatan['Neighborhoods']) {
-          const kelurahan = kecamatan['Neighborhoods'][kelurahanKey]
+        for (const kelurahanCode in kecamatan['neighborhoods']) {
+          const kelurahan = kecamatan['neighborhoods'][kelurahanCode]
 
           // Upsert Kelurahan
           await prisma.kelurahan.upsert({
             where: {
               kode_kecamatanId: {
-                kode: kelurahan['Code'],
+                kode: kelurahanCode,
                 kecamatanId: createdKecamatan.id,
               },
             },
             update: {},
             create: {
-              kode: kelurahan['Code'],
-              nama: kelurahan['Name'],
+              kode: kelurahanCode,
+              nama: kelurahan.name,
               kecamatanId: createdKecamatan.id,
             },
           })
