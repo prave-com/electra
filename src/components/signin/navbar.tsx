@@ -23,7 +23,7 @@ export default function Navbar() {
           }}
         >
           <Image
-            src="/images/logo/vercel-icon-dark.svg"
+            src="/images/logo/electra.svg"
             alt="Logo"
             width={32}
             height={32}

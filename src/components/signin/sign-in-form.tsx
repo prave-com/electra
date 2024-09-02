@@ -67,7 +67,7 @@ function SignInBody() {
 
     try {
       const result = await login(values, callbackUrl)
-      if (result.error) {
+      if (result?.error) {
         setErrorMessage(result.error)
       }
     } catch (error) {
